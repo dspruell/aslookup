@@ -13,7 +13,7 @@ from .exceptions import (NoASDataError, NonroutableAddressError,
 
 logger = logging.getLogger(__name__)
 
-AS_SERVICE = {
+AS_SERVICES = {
     'shadowserver': {
         'origin_prefix': 'origin.asn.shadowserver.org',
     },
@@ -25,10 +25,6 @@ AS_SERVICE = {
 
 # IPs with these prefixes aren't routable on Internet and need not be sent
 # to lookup service. Ref. RFC 5735.
-# XXX if 0. successfully works as a prefix then drop _STRS
-IP_NOLOOKUP_STRS = {
-    '0.':            'RFC 1122 IPv4 any',
-}
 IP_NOLOOKUP_NETS = {
     '0.0.0.0/8':       'RFC 1122 IPv4 any',
     '127.0.0.0/8':     'RFC 1122 loopback', 
@@ -52,7 +48,7 @@ IP_NOLOOKUP_NETS = {
 pyt = pytricia.PyTricia()
 for net, descr in IP_NOLOOKUP_NETS.items():
     pyt[net] = descr
-logger.warning('compiled exception network tree with %d networks', len(pyt))
+logger.debug('compiled exception network tree with %d networks', len(pyt))
 
 IPV4_FMT = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
 
@@ -61,7 +57,7 @@ ASData = namedtuple('ASData', ['handle', 'asn', 'as_name', 'rir', 'reg_date',
                     'prefix', 'cc', 'domain', 'data_source'])
 
 def validate_ipv4(addr):
-    '''Validate that input is an IPv4 address.'''
+    'Validate that input is an IPv4 address.'
 
     # Check that it's a valid IPv4 address format
     if not re.match(IPV4_FMT, addr):
@@ -70,16 +66,14 @@ def validate_ipv4(addr):
         if not 0 <= int(octet) <= 255:
             raise AddressFormatError('Invalid octet value for IPv4 address')
 
-    # Verify address not in reserved/non-routable prefixes. XXX
-    #for p in list(IP_NOLOOKUP.keys()):
-    #    if addr.startswith(p):
-    #        raise NonroutableAddressError(IP_NOLOOKUP[p])
+    # Verify address not in reserved/non-routable prefixes.
     if addr in pyt:
         raise NonroutableAddressError(pyt.get(addr))
     return
 
 def get_cymru_data(s):
-    '''Parse Team Cymru AS data query and return structured record tuple.'''
+    'Parse Team Cymru AS data query and return structured record tuple.'
+
     s = s.strip('"')
     # Cymru results began to append a comma and country code to the end of the
     # AS name, polluting the data. Strip it off.
@@ -97,7 +91,8 @@ def get_cymru_data(s):
     return as_data
 
 def get_shadowserver_data(s):
-    '''Parse Shadowserver AS data query and return structured record tuple.'''
+    'Parse Shadowserver AS data query and return structured record tuple.'
+
     s = s.strip('"')
     # Shadowserver results began to append a comma and country code to the
     # end of the AS name, polluting the data. Strip it off.
@@ -135,7 +130,7 @@ def get_as_data(addr, service='shadowserver'):
 
     # Format IP to reversed-octet structure and issue origin lookup.
     rev_addr = '.'.join(reversed(addr.split('.')))
-    origin_addr = '.'.join([rev_addr, AS_SERVICE[service]['origin_prefix']])
+    origin_addr = '.'.join([rev_addr, AS_SERVICES[service]['origin_prefix']])
     try:
         answers = dns.resolver.query(origin_addr, 'TXT')
     except dns.resolver.NXDOMAIN:
@@ -156,7 +151,7 @@ def get_as_data(addr, service='shadowserver'):
             origin_data = answers[0].to_text().strip('"')
             m = re.match(r'^\d+', origin_data)
             as_data_addr = 'AS{0}.{1}'.format(int(m.group(0)),
-                                            AS_SERVICE[service]['as_description_prefix'])
+                                              AS_SERVICES[service]['as_description_prefix'])
             try:
                 answers = dns.resolver.query(as_data_addr, 'TXT')
             except dns.resolver.NXDOMAIN:
