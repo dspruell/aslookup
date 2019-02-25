@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='aslookup',
-    version='1.0.1',
+    version='1.0.2',
     description='IP to AS routing data query script',
     long_description=long_description,
     packages=setuptools.find_packages(),
