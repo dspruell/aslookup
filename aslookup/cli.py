@@ -57,6 +57,9 @@ def main():
             stream = sys.stdout
             if not args.raw:
                 out_str = '{0} | {1} | {2}'.format(data.handle, data.cc, data.as_name)
+            else:
+                print(data)
+                continue
 
         print('%-15s  %s' % (addr, out_str), file=stream)
         if args.pause:
