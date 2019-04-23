@@ -150,6 +150,11 @@ def get_as_data(addr, service='shadowserver'):
             # second lookup to return AS name information
             origin_data = answers[0].to_text().strip('"')
             m = re.match(r'^\d+', origin_data)
+            if m is None:
+                msg = ('Error in lookup from service {svc} for IP {ip} '
+                       '(origin_data response: {od})'
+                       .format( svc=service, ip=addr, od=origin_data))
+                raise NoASDataError(msg)
             as_data_addr = 'AS{0}.{1}'.format(int(m.group(0)),
                                               AS_SERVICES[service]['as_description_prefix'])
             try:
