@@ -1,10 +1,14 @@
+'CLI module'
+
 import sys
+import logging
 import argparse
 from time import sleep
 
-from .lookup import get_as_data
 from .exceptions import AddressFormatError, LookupError
 
+
+LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
 
 def main():
     description = ('Client to return autonomous system information for '
@@ -23,8 +27,24 @@ def main():
     parser.add_argument('-r', '--raw', action='store_true',
                         help='display internal ASData object showing the value '
                              'of each known field in the AS data')
+    parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
+                        default='warning',
+                        help='set output verbosity level '
+                             '(default: %(default)s)')
+    parser.add_argument('-V', '--version', action='store_true',
+                        help='display software version')
     parser.add_argument('address', nargs='*', help='IPv4 address(es) on which to perform AS lookup')
     args = parser.parse_args()
+
+    logging.getLogger().setLevel(args.loglevel.upper())
+
+    if args.version:
+        from . import get_version
+        from os import linesep
+        parser.exit(0, get_version() + linesep)
+
+    # Loaded from here so that root logger configured with level first
+    from .lookup import get_as_data
 
     # Print header lines if specified
     if args.header:
