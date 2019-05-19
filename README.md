@@ -25,14 +25,10 @@ package. If missing, it will be installed automatically.
 
 It's best to install the program into a Python virtualenv.
 
-Recommended installation using pip (make sure to use the pip or python command
-from your target Python 3 environment)!
+Recommended installation from PyPI using pip (make sure to use the pip or
+python command from your target Python 3 environment)!
 
-    pip install .
-
-...or:
-
-    python3 setup.py install
+    pip3 install aslookup
 
 ## Usage
 
