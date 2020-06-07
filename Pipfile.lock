@@ -1,0 +1,40 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "4391e809c826212618a4e435bd99a70fe91e7200aa04436847a1f935e1af7d49"
+        },
+        "pipfile-spec": 6,
+        "requires": {
+            "python_version": "3.7"
+        },
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "aslookup": {
+            "editable": true,
+            "path": "."
+        },
+        "dnspython": {
+            "hashes": [
+                "sha256:36c5e8e38d4369a08b6780b7f27d790a292b2b08eea01607865bf0936c558e01",
+                "sha256:f69c21288a962f4da86e56c4905b49d11aba7938d3d740e80d9e366ee4f1632d"
+            ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==1.16.0"
+        },
+        "pytricia": {
+            "hashes": [
+                "sha256:7f6c0afdce55a1b7651a1a56d8b621c228a211dd23f3f8c5c1fdec3af2c19b15",
+                "sha256:ee49486fd0726eca7d2219029bef162652ca80dfb07f7eedadc6cfc5f3559231"
+            ],
+            "version": "==1.0.2"
+        }
+    },
+    "develop": {}
+}
