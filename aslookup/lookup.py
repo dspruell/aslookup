@@ -72,41 +72,57 @@ def validate_ipv4(addr):
     return
 
 def get_cymru_data(s):
-    'Parse Team Cymru AS data query and return structured record tuple.'
+    '''
+    Parse Team Cymru AS data query and return structured record tuple.
 
+    DNS answer format received, first query (2020-09-11):
+        "15133 | 93.184.216.0/24 | EU | ripencc | 2008-06-02"
+    DNS answer format received, second query (handled here) (2020-09-11):
+        "15133 | US | arin | 2007-03-19 | EDGECAST, US"
+
+    '''
     s = s.strip('"')
     # Cymru results began to append a comma and country code to the end of the
     # AS name, polluting the data. Strip it off.
     s = re.sub(r', [A-Z]{2}$', '', s)
     fields = s.split(' | ')
-    as_data = ASData(asn=fields[0],
-                     handle='AS{0}'.format(fields[0]),
-                     as_name=fields[4],
-                     prefix=None,
-                     domain=None,
-                     cc=fields[1],
-                     rir=fields[2],
-                     reg_date=fields[3],
-                     data_source='cymru')
+    as_data = ASData(
+        asn=fields[0],
+        handle='AS{0}'.format(fields[0]),
+        as_name=fields[4],
+        prefix=None,
+        domain=None,
+        cc=fields[1],
+        rir=fields[2],
+        reg_date=fields[3],
+        data_source='cymru'
+    )
     return as_data
 
 def get_shadowserver_data(s):
-    'Parse Shadowserver AS data query and return structured record tuple.'
+    '''
+    Parse Shadowserver AS data query and return structured record tuple.
 
+    DNS answer format received (2020-09-11):
+        "15133 | 93.184.216.0/24 | EDGECAST | US | EDGECAST"
+
+    '''
     s = s.strip('"')
-    # Shadowserver results began to append a comma and country code to the
-    # end of the AS name, polluting the data. Strip it off.
+    # Shadowserver results at one point appended a comma and country code to
+    # the end of the AS name, polluting the data. Strip it off.
     s = re.sub(r', [A-Z]{2}$', '', s)
     fields = s.split(' | ')
-    as_data = ASData(asn=fields[0],
-                     handle='AS{0}'.format(fields[0]),
-                     as_name='{0} - {1}'.format(fields[2], fields[4]),
-                     prefix=fields[1],
-                     domain=fields[4],
-                     cc=fields[3],
-                     rir=None,
-                     reg_date=None,
-                     data_source='shadowserver')
+    as_data = ASData(
+        asn=fields[0],
+        handle='AS{0}'.format(fields[0]),
+        as_name=fields[2],
+        prefix=fields[1],
+        domain=None,
+        cc=fields[3],
+        rir=None,
+        reg_date=None,
+        data_source='shadowserver'
+    )
     return as_data
 
 def get_as_data(addr, service='shadowserver'):
@@ -137,6 +153,8 @@ def get_as_data(addr, service='shadowserver'):
         raise NoASDataError('No routing origin data for address')
 
     if answers:
+        for a in answers:
+            logger.debug('raw DNS record response: %s', a)
         if service == 'shadowserver':
             # Shadowserver origin lookup response includes AS name information
             asdata_text = answers[0].to_text()
@@ -155,13 +173,16 @@ def get_as_data(addr, service='shadowserver'):
                        '(origin_data response: {od})'
                        .format( svc=service, ip=addr, od=origin_data))
                 raise NoASDataError(msg)
-            as_data_addr = 'AS{0}.{1}'.format(int(m.group(0)),
-                                              AS_SERVICES[service]['as_description_prefix'])
+            as_data_addr = 'AS{0}.{1}'.format(
+                int(m.group(0)),
+                AS_SERVICES[service]['as_description_prefix'])
             try:
                 answers = dns.resolver.query(as_data_addr, 'TXT')
             except dns.resolver.NXDOMAIN:
                 raise NoASDataError('No routing origin data for address')
             if answers:
+                for a in answers:
+                    logger.debug('raw DNS record response: %s', a)
                 asdata_text = answers[0].to_text()
                 asdata = get_cymru_data(asdata_text)
         return asdata

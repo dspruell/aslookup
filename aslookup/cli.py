@@ -1,14 +1,21 @@
 'CLI module'
 
+from os import linesep
 import sys
 import logging
 import argparse
 from time import sleep
 
+from . import __full_version__
 from .exceptions import AddressFormatError, LookupError
+from .lookup import get_as_data
 
 
-LOGLEVEL_CHOICES = ['debug', 'info', 'warning', 'error', 'critical']
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='[%(levelname)s] %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def main():
     description = ('Client to return autonomous system information for '
@@ -27,24 +34,20 @@ def main():
     parser.add_argument('-r', '--raw', action='store_true',
                         help='display internal ASData object showing the value '
                              'of each known field in the AS data')
-    parser.add_argument('-l', '--loglevel', choices=LOGLEVEL_CHOICES,
-                        default='warning',
-                        help='set output verbosity level '
-                             '(default: %(default)s)')
     parser.add_argument('-V', '--version', action='store_true',
-                        help='display software version')
-    parser.add_argument('address', nargs='*', help='IPv4 address(es) on which to perform AS lookup')
+                        help='display package version')
+    parser.add_argument('-v', '--verbose', dest='loglevel', action='store_const',
+                        const=logging.DEBUG, default=logging.WARNING,
+                        help='show verbose output')
+    parser.add_argument('address', nargs='*',
+                        help='IPv4 address(es) on which to perform AS lookup')
     args = parser.parse_args()
 
-    logging.getLogger().setLevel(args.loglevel.upper())
+    logging.getLogger().setLevel(args.loglevel)
 
+    # Print software version
     if args.version:
-        from . import get_version
-        from os import linesep
-        parser.exit(0, get_version() + linesep)
-
-    # Loaded from here so that root logger configured with level first
-    from .lookup import get_as_data
+        parser.exit(status=0, message=__full_version__ + linesep)
 
     # Print header lines if specified
     if args.header:
