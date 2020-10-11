@@ -1,7 +1,8 @@
-'AS lookup tool'
+'Multi-service IP-AS lookup tool'
 
-import logging
 import pkg_resources
+
+from .lookup import get_as_data  # noqa: F401
 
 
 __application_name__ = __name__

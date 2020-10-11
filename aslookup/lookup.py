@@ -5,7 +5,8 @@ import logging
 from collections import namedtuple
 
 import pytricia
-import dns.resolver, dns.reversename
+import dns.resolver
+import dns.reversename
 
 from .exceptions import (NoASDataError, NonroutableAddressError,
                          AddressFormatError)
@@ -27,7 +28,7 @@ AS_SERVICES = {
 # to lookup service. Ref. RFC 5735.
 IP_NOLOOKUP_NETS = {
     '0.0.0.0/8':       'RFC 1122 IPv4 any',
-    '127.0.0.0/8':     'RFC 1122 loopback', 
+    '127.0.0.0/8':     'RFC 1122 loopback',
     '10.0.0.0/8':      'RFC 1918 range',
     '100.64.0.0/10':   'RFC 6598 shared transition space',
     '169.254.0.0/16':  'RFC 3927 link local range',
@@ -56,6 +57,7 @@ IPV4_FMT = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
 ASData = namedtuple('ASData', ['handle', 'asn', 'as_name', 'rir', 'reg_date',
                     'prefix', 'cc', 'domain', 'data_source'])
 
+
 def validate_ipv4(addr):
     'Validate that input is an IPv4 address.'
 
@@ -70,6 +72,7 @@ def validate_ipv4(addr):
     if addr in pyt:
         raise NonroutableAddressError(pyt.get(addr))
     return
+
 
 def get_cymru_data(s):
     '''
@@ -99,6 +102,7 @@ def get_cymru_data(s):
     )
     return as_data
 
+
 def get_shadowserver_data(s):
     '''
     Parse Shadowserver AS data query and return structured record tuple.
@@ -125,13 +129,14 @@ def get_shadowserver_data(s):
     )
     return as_data
 
+
 def get_as_data(addr, service='shadowserver'):
     '''
     Query and return AS information for supplied IP address.
 
-    Return string containing formatted AS information for a given IP address, 
-    unless the address falls into these categories: it is not a valid IPv4 
-    address, there is no current AS data for that address, (i.e. not part of an 
+    Return string containing formatted AS information for a given IP address,
+    unless the address falls into these categories: it is not a valid IPv4
+    address, there is no current AS data for that address, (i.e. not part of an
     announced prefix), or it is known to be a non-routable IP address. In these
     cases, an appropriate exception is raised.
 
@@ -139,7 +144,7 @@ def get_as_data(addr, service='shadowserver'):
     addr = addr.strip()
     try:
         validate_ipv4(addr)
-    except AddressFormatError as e:
+    except AddressFormatError:
         raise
     except LookupError as e:
         raise LookupError('Ignoring: %s' % e)
@@ -171,7 +176,7 @@ def get_as_data(addr, service='shadowserver'):
             if m is None:
                 msg = ('Error in lookup from service {svc} for IP {ip} '
                        '(origin_data response: {od})'
-                       .format( svc=service, ip=addr, od=origin_data))
+                       .format(svc=service, ip=addr, od=origin_data))
                 raise NoASDataError(msg)
             as_data_addr = 'AS{0}.{1}'.format(
                 int(m.group(0)),
@@ -186,4 +191,3 @@ def get_as_data(addr, service='shadowserver'):
                 asdata_text = answers[0].to_text()
                 asdata = get_cymru_data(asdata_text)
         return asdata
-

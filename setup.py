@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='aslookup',
-    version='1.0.8',
+    version='1.0.9',
     description='IP to AS routing data query script',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -20,10 +20,10 @@ setuptools.setup(
         'pytricia',
     ],
     classifiers=[
-        #'Development Status :: 3 - Alpha',
+        # 'Development Status :: 3 - Alpha',
         'Development Status :: 4 - Beta',
-        #'Development Status :: 5 - Production/Stable',
-        #'Development Status :: 6 - Mature',
+        # 'Development Status :: 5 - Production/Stable',
+        # 'Development Status :: 6 - Mature',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Programming Language :: Python :: 3',
     ],

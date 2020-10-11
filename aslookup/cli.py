@@ -17,6 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def main():
     description = ('Client to return autonomous system information for '
                    'IPv4 addresses')
@@ -30,15 +31,16 @@ def main():
     parser.add_argument('-H', '--header', action='store_true',
                         help='print descriptive header before output')
     parser.add_argument('-p', '--pause', action='store_true',
-                        help='pause for one second between each query on address list input')
+                        help='pause for one second between each query on '
+                             'address list input')
     parser.add_argument('-r', '--raw', action='store_true',
-                        help='display internal ASData object showing the value '
-                             'of each known field in the AS data')
+                        help='display internal ASData object showing the '
+                             'value of each known field in the AS data')
     parser.add_argument('-V', '--version', action='store_true',
                         help='display package version')
-    parser.add_argument('-v', '--verbose', dest='loglevel', action='store_const',
-                        const=logging.DEBUG, default=logging.WARNING,
-                        help='show verbose output')
+    parser.add_argument('-v', '--verbose', dest='loglevel',
+                        action='store_const', const=logging.DEBUG,
+                        default=logging.WARNING, help='show verbose output')
     parser.add_argument('address', nargs='*',
                         help='IPv4 address(es) on which to perform AS lookup')
     args = parser.parse_args()
@@ -79,7 +81,8 @@ def main():
         else:
             stream = sys.stdout
             if not args.raw:
-                out_str = '{0} | {1} | {2}'.format(data.handle, data.cc, data.as_name)
+                out_str = '{0} | {1} | {2}'.format(
+                    data.handle, data.cc, data.as_name)
             else:
                 print(data)
                 continue
