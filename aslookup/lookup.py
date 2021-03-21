@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 AS_SERVICES = {
     'shadowserver': {
-        'origin_prefix': 'origin.asn.shadowserver.org',
+        'origin_suffix': 'origin.asn.shadowserver.org',
     },
     'cymru': {
-        'origin_prefix': 'origin.asn.cymru.com',
-        'as_description_prefix': 'asn.cymru.com',
+        'origin_suffix': 'origin.asn.cymru.com',
+        'as_description_suffix': 'asn.cymru.com',
     },
 }
 
@@ -49,13 +49,14 @@ IP_NOLOOKUP_NETS = {
 pyt = pytricia.PyTricia()
 for net, descr in IP_NOLOOKUP_NETS.items():
     pyt[net] = descr
-logger.debug('compiled exception network tree with %d networks', len(pyt))
+logger.debug('created exception network tree with %d networks', len(pyt))
 
-IPV4_FMT = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
+IPV4_FMT = re.compile(r'^(?:\d{1,3}\.){3}\d{1,3}$')
+PREFIX_FMT = re.compile(r'(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}\b')
 
 # Structured record tuple
 ASData = namedtuple('ASData', ['handle', 'asn', 'as_name', 'rir', 'reg_date',
-                    'prefix', 'cc', 'domain', 'data_source'])
+                    'prefix', 'cc', 'domain', 'isp', 'data_source'])
 
 
 def validate_ipv4(addr):
@@ -74,9 +75,12 @@ def validate_ipv4(addr):
     return
 
 
-def get_cymru_data(s):
+def get_cymru_data(s, extra={}):
     '''
     Parse Team Cymru AS data query and return structured record tuple.
+
+    `extra` is a dict of additional fields that can be passed in, typically
+    consisting of data from the origin DNS query.
 
     DNS answer format received, first query (2020-09-11):
         "15133 | 93.184.216.0/24 | EU | ripencc | 2008-06-02"
@@ -89,15 +93,17 @@ def get_cymru_data(s):
     # AS name, polluting the data. Strip it off.
     s = re.sub(r', [A-Z]{2}$', '', s)
     fields = s.split(' | ')
+    fields = [x.strip() for x in fields]
     as_data = ASData(
         asn=fields[0],
-        handle='AS{0}'.format(fields[0]),
+        handle=f'AS{fields[0]}',
         as_name=fields[4],
-        prefix=None,
+        prefix=extra.get('ip_prefix'),
         domain=None,
         cc=fields[1],
         rir=fields[2],
         reg_date=fields[3],
+        isp=None,
         data_source='cymru'
     )
     return as_data
@@ -109,6 +115,8 @@ def get_shadowserver_data(s):
 
     DNS answer format received (2020-09-11):
         "15133 | 93.184.216.0/24 | EDGECAST | US | EDGECAST"
+    DNS answer format received (2021-03-20):
+        "12876 | 212.129.0.0/18 |  | FR | Online SAS"
 
     '''
     s = s.strip('"')
@@ -116,15 +124,22 @@ def get_shadowserver_data(s):
     # the end of the AS name, polluting the data. Strip it off.
     s = re.sub(r', [A-Z]{2}$', '', s)
     fields = s.split(' | ')
+    fields = [x.strip() for x in fields]
+    # For any response that returned AS data but no AS name, alert user.
+    if fields[0] and not fields[2]:
+        logger.warning('no value for AS name; overriding with ISP')
     as_data = ASData(
         asn=fields[0],
-        handle='AS{0}'.format(fields[0]),
-        as_name=fields[2],
+        handle=f'AS{fields[0]}',
+        # If the AS Name field is blank, toss the ISP in and mark it as
+        # an ISP override.
+        as_name=fields[2] or fields[4],
         prefix=fields[1],
         domain=None,
         cc=fields[3],
         rir=None,
         reg_date=None,
+        isp=fields[4],
         data_source='shadowserver'
     )
     return as_data
@@ -134,11 +149,14 @@ def get_as_data(addr, service='shadowserver'):
     '''
     Query and return AS information for supplied IP address.
 
+    Each IP-ASN service operates differently and returns slightly different
+    fields in their responses.
+
     Return string containing formatted AS information for a given IP address,
     unless the address falls into these categories: it is not a valid IPv4
     address, there is no current AS data for that address, (i.e. not part of an
-    announced prefix), or it is known to be a non-routable IP address. In these
-    cases, an appropriate exception is raised.
+    announced prefix), or it is known to be a non-routable or reserved IP
+    address. In these cases, an appropriate exception is raised.
 
     '''
     addr = addr.strip()
@@ -151,7 +169,7 @@ def get_as_data(addr, service='shadowserver'):
 
     # Format IP to reversed-octet structure and issue origin lookup.
     rev_addr = '.'.join(reversed(addr.split('.')))
-    origin_addr = '.'.join([rev_addr, AS_SERVICES[service]['origin_prefix']])
+    origin_addr = '.'.join([rev_addr, AS_SERVICES[service]['origin_suffix']])
     try:
         answers = dns.resolver.query(origin_addr, 'TXT')
     except dns.resolver.NXDOMAIN:
@@ -169,18 +187,25 @@ def get_as_data(addr, service='shadowserver'):
             if not asdata.asn:
                 raise NoASDataError('No routing origin data for address')
         else:
+            extra_data = {}
+
             # Team Cymru origin lookup response returns only ASN and requires
             # second lookup to return AS name information
             origin_data = answers[0].to_text().strip('"')
-            m = re.match(r'^\d+', origin_data)
-            if m is None:
-                msg = ('Error in lookup from service {svc} for IP {ip} '
-                       '(origin_data response: {od})'
-                       .format(svc=service, ip=addr, od=origin_data))
+            m1 = re.match(r'^\d+', origin_data)
+            if m1 is None:
+                msg = (f'Error in lookup from service {service} for IP {addr} '
+                       f'(origin_data response: {origin_data})')
                 raise NoASDataError(msg)
-            as_data_addr = 'AS{0}.{1}'.format(
-                int(m.group(0)),
-                AS_SERVICES[service]['as_description_prefix'])
+
+            # Capture prefix from the origin data response
+            m2 = PREFIX_FMT.search(origin_data)
+            if m2 is not None:
+                extra_data.update(ip_prefix=m2.group(0))
+
+            # Run second query for AS name/description info
+            _sfx = AS_SERVICES[service]['as_description_suffix']
+            as_data_addr = f'AS{m1.group(0)}.{_sfx}'
             try:
                 answers = dns.resolver.query(as_data_addr, 'TXT')
             except dns.resolver.NXDOMAIN:
@@ -189,5 +214,5 @@ def get_as_data(addr, service='shadowserver'):
                 for a in answers:
                     logger.debug('raw DNS record response: %s', a)
                 asdata_text = answers[0].to_text()
-                asdata = get_cymru_data(asdata_text)
+                asdata = get_cymru_data(asdata_text, extra=extra_data)
         return asdata
