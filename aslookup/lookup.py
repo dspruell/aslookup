@@ -62,7 +62,7 @@ ASData = namedtuple('ASData', ['handle', 'asn', 'as_name', 'rir', 'reg_date',
 def validate_ipv4(addr):
     'Validate that input is an IPv4 address.'
 
-    # Check that it's a valid IPv4 address format
+    # Check that it's a valid IPv4 address
     if not re.match(IPV4_FMT, addr):
         raise AddressFormatError('Invalid format for IPv4 address')
     for octet in addr.split('.'):
@@ -128,12 +128,13 @@ def get_shadowserver_data(s):
     # For any response that returned AS data but no AS name, alert user.
     if fields[0] and not fields[2]:
         logger.warning('no value for AS name; overriding with ISP')
+
     as_data = ASData(
         asn=fields[0],
         handle=f'AS{fields[0]}',
         # If the AS Name field is blank, toss the ISP in and mark it as
         # an ISP override.
-        as_name=fields[2] or fields[4],
+        as_name=fields[4] or fields[2],
         prefix=fields[1],
         domain=None,
         cc=fields[3],
