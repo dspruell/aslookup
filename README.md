@@ -34,14 +34,14 @@ python command from your target Python 3 environment)!
 
 ### Python module
 
-The Python module defaults to querying the Shadowserver data service. The
+The Python module defaults to querying the Team Cymru data service. The
 desired service may be specified by passing the *service* parameter to
 `get_as_data`.
 
 ```python
 from aslookup import get_as_data
-ip = '8.8.8.8'
-get_as_data(ip, service='cymru')
+ip = "8.8.8.8"
+get_as_data(ip, service="shadowserver")
 ```
 
 ### CLI script

@@ -6,14 +6,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='aslookup',
-    version='1.2.0',
+    version='1.3.0',
     description='IP to AS routing data query script',
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=setuptools.find_packages(),
     include_package_data=True,
     author='Darren Spruell',
-    author_email='phatbuckett@gmail.com',
+    author_email='dspruell@sancho2k.net',
     url='https://github.com/dspruell/aslookup',
     install_requires=[
         'dnspython',

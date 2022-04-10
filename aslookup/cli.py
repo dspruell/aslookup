@@ -11,6 +11,8 @@ from .exceptions import AddressFormatError, LookupError
 from .lookup import get_as_data
 
 
+DEFAULT_LOOKUP_SOURCE = "cymru"
+
 logging.basicConfig(
     level=logging.DEBUG,
     format='[%(levelname)s] %(message)s'
@@ -26,7 +28,7 @@ def main():
               'also be passed on standard input.')
     parser = argparse.ArgumentParser(description=description, epilog=epilog)
     parser.add_argument('-s', '--service', choices=['shadowserver', 'cymru'],
-                        default='shadowserver',
+                        default=DEFAULT_LOOKUP_SOURCE,
                         help='service to query (default: %(default)s)')
     parser.add_argument('-H', '--header', action='store_true',
                         help='print descriptive header before output')
