@@ -20,15 +20,18 @@ the address.
 
 ## Installation
 
-The app has been tested on Python 3. The script requires the *dnspython*
-package. If missing, it will be installed automatically.
+The app has been tested on Python 3.
 
-It's best to install the program into a Python virtualenv.
+It's best to install the program into a Python virtualenv. If you will only use
+the command line interface, the recommended way to install it is using
+[pipx](https://pypa.github.io/pipx/):
 
-Recommended installation from PyPI using pip (make sure to use the pip or
-python command from your target Python 3 environment)!
+    pipx install aslookup
 
-    pip3 install aslookup
+If you will use aslookup as a library, you'll instead want to install it using
+`pip` in your target Python environment:
+
+    python3 -m pip install aslookup
 
 ## Usage
 
@@ -53,13 +56,17 @@ addresses as arguments, the script reports the problem on standard error and
 exits with an error. When providing input on stdin, the error is reported on 
 standard output but execution is not aborted.
 
-    as-lookup 8.8.8.8 11.22.33.44
+    as-lookup 8.8.8.8 9.9.9.9
+
+or:
+
+    as-lookup < ipaddrs.txt
 
 ### Test data
 
-A list of test values for the script is included in the file `test_input.txt`.
+A list of test values for the script is included in the file `tests/test_input.txt`.
 This can be useful to validate included IP prefix classifications and see the
 output format.
 
-    as-lookup < test_input.txt
+    as-lookup < tests/test_input.txt
 

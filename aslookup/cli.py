@@ -1,50 +1,82 @@
-'CLI module'
+"""aslookup CLI module."""
 
-from os import linesep
-import sys
-import logging
 import argparse
+import logging
+import sys
+from os import linesep
 from time import sleep
 
 from . import __full_version__
 from .exceptions import AddressFormatError, LookupError
 from .lookup import get_as_data
 
-
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='[%(levelname)s] %(message)s'
+    level=logging.DEBUG, format="[%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 def main():
-    description = ('Client to return autonomous system information for '
-                   'IPv4 addresses')
-    epilog = ('One or more IP addresses may be passed as arguments on the '
-              'command line. A list of IP addresses (newline-separated) may '
-              'also be passed on standard input.')
+    """Run main CLI."""
+    description = (
+        "Client to return autonomous system information for "
+        "IPv4 addresses"
+    )
+    epilog = (
+        "One or more IP addresses may be passed as arguments on the "
+        "command line. A list of IP addresses (newline-separated) may "
+        "also be passed on standard input."
+    )
     parser = argparse.ArgumentParser(description=description, epilog=epilog)
-    parser.add_argument('-s', '--service', choices=['shadowserver', 'cymru'],
-                        default=DEFAULT_LOOKUP_SOURCE,
-                        help='service to query (default: %(default)s)')
-    parser.add_argument('-H', '--header', action='store_true',
-                        help='print descriptive header before output')
-    parser.add_argument('-p', '--pause', action='store_true',
-                        help='pause for one second between each query on '
-                             'address list input')
-    parser.add_argument('-r', '--raw', action='store_true',
-                        help='display internal ASData object showing the '
-                             'value of each known field in the AS data')
-    parser.add_argument('-V', '--version', action='store_true',
-                        help='display package version')
-    parser.add_argument('-v', '--verbose', dest='loglevel',
-                        action='store_const', const=logging.DEBUG,
-                        default=logging.WARNING, help='show verbose output')
-    parser.add_argument('address', nargs='*',
-                        help='IPv4 address(es) on which to perform AS lookup')
+    parser.add_argument(
+        "-s",
+        "--service",
+        choices=["shadowserver", "cymru"],
+        default=DEFAULT_LOOKUP_SOURCE,
+        help="service to query (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-H",
+        "--header",
+        action="store_true",
+        help="print descriptive header before output",
+    )
+    parser.add_argument(
+        "-p",
+        "--pause",
+        action="store_true",
+        help="pause for one second between each query on "
+        "address list input",
+    )
+    parser.add_argument(
+        "-r",
+        "--raw",
+        action="store_true",
+        help="display internal ASData object showing the "
+        "value of each known field in the AS data",
+    )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="store_true",
+        help="display package version",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        dest="loglevel",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.WARNING,
+        help="show verbose output",
+    )
+    parser.add_argument(
+        "address",
+        nargs="*",
+        help="IPv4 address(es) on which to perform AS lookup",
+    )
     args = parser.parse_args()
 
     logging.getLogger().setLevel(args.loglevel)
@@ -55,9 +87,9 @@ def main():
 
     # Print header lines if specified
     if args.header:
-        print('-' * 50)
-        print('%-15s  %s' % ('IP Address', 'AS Information'))
-        print('-' * 50)
+        print("-" * 50)
+        print("%-15s  %s" % ("IP Address", "AS Information"))
+        print("-" * 50)
 
     # Process addresses given as parameters or fed on stdin.
     # - Input as parameters: In this mode, invalid IP addresses result in
@@ -73,7 +105,7 @@ def main():
             data = get_as_data(addr, service=args.service)
         except AddressFormatError as e:
             if args.address:
-                parser.error('[{}] {}'.format(addr, e))
+                parser.error("[{}] {}".format(addr, e))
             else:
                 stream = sys.stderr
                 out_str = e
@@ -83,12 +115,13 @@ def main():
         else:
             stream = sys.stdout
             if not args.raw:
-                out_str = '{0} | {1} | {2}'.format(
-                    data.handle, data.cc, data.as_name)
+                out_str = "{0} | {1} | {2}".format(
+                    data.handle, data.cc, data.as_name
+                )
             else:
                 print(data)
                 continue
 
-        print('%-15s  %s' % (addr, out_str), file=stream)
+        print("%-15s  %s" % (addr, out_str), file=stream)
         if args.pause:
             sleep(1)

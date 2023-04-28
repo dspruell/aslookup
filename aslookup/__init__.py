@@ -1,10 +1,13 @@
-'Multi-service IP-AS lookup tool'
+"""Multi-service IP-ASN lookup tool."""
 
-import pkg_resources
+from importlib.metadata import version
 
-from .lookup import get_as_data  # noqa: F401
+# XXX It appears in some cases this line is required for the script to
+# function, and it's not clear why given that the function is not used in this
+# module.
+# from .lookup import get_as_data  # noqa: F401
 
 
 __application_name__ = __name__
-__version__ = pkg_resources.get_distribution(__application_name__).version
-__full_version__ = ' '.join([__application_name__, __version__])
+__version__ = version(__application_name__)
+__full_version__ = f"{__application_name__} {__version__}"
