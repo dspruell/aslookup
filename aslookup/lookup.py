@@ -1,19 +1,18 @@
 """Lookup routines."""
 
-import re
 import logging
+import re
 from collections import namedtuple
 
-import pytricia
 import dns.resolver
 import dns.reversename
+import pytricia
 
 from .exceptions import (
+    AddressFormatError,
     NoASDataError,
     NonroutableAddressError,
-    AddressFormatError,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +106,7 @@ def get_cymru_data(s, extra={}):
     # Cymru results began to append a comma and country code to the end of the
     # AS name, polluting the data. Strip it off.
     s = re.sub(r", [A-Z]{2}$", "", s)
-    fields = s.split(" | ")
+    fields = s.split("|")
     fields = [x.strip() for x in fields]
     as_data = ASData(
         asn=fields[0],
@@ -138,7 +137,7 @@ def get_shadowserver_data(s):
     # Shadowserver results at one point appended a comma and country code to
     # the end of the AS name, polluting the data. Strip it off.
     s = re.sub(r", [A-Z]{2}$", "", s)
-    fields = s.split(" | ")
+    fields = s.split("|")
     fields = [x.strip() for x in fields]
     # For any response that returned AS data but no AS name, alert user.
     if fields[0] and not fields[2]:
