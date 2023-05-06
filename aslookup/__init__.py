@@ -2,10 +2,9 @@
 
 from importlib.metadata import version
 
-# XXX It appears in some cases this line is required for the script to
-# function, and it's not clear why given that the function is not used in this
-# module.
-# from .lookup import get_as_data  # noqa: F401
+from .lookup import get_as_data
+
+__all__ = (get_as_data,)
 
 
 __application_name__ = __name__
