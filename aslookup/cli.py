@@ -6,6 +6,8 @@ import sys
 from os import linesep
 from time import sleep
 
+from defang import refang
+
 from . import __full_version__
 from .exceptions import AddressFormatError, LookupError
 from .lookup import get_as_data
@@ -101,6 +103,7 @@ def main():
     in_src = args.address if args.address else sys.stdin
     for addr in in_src:
         addr = addr.strip()
+        addr = refang(addr)
         try:
             data = get_as_data(addr, service=args.service)
         except AddressFormatError as e:

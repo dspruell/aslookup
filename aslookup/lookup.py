@@ -3,10 +3,12 @@
 import logging
 import re
 from collections import namedtuple
+from ipaddress import IPv4Address
 
 import dns.resolver
 import dns.reversename
 import pytricia
+from defang import refang
 
 from .exceptions import (
     AddressFormatError,
@@ -75,13 +77,27 @@ ASData = namedtuple(
 
 
 def validate_ipv4(addr):
-    """Validate that input is an IPv4 address."""
+    """
+    Validate IP addresses.
+
+    - Validate that input is a valid IPv4 address
+    - Flag various reserved and non-routable addresses
+
+    """
     # Check that it's a valid IPv4 address
-    if not re.match(IPV4_FMT, addr):
+    # if not re.match(IPV4_FMT, addr):
+    #    raise AddressFormatError("Invalid format for IPv4 address")
+    # for octet in addr.split("."):
+    #    if not 0 <= int(octet) <= 255:
+    #        raise AddressFormatError("Invalid octet value for IPv4 address")
+    # Distinguish address family by IPv4 vs. IPv6 separator
+    if "." not in addr:
         raise AddressFormatError("Invalid format for IPv4 address")
-    for octet in addr.split("."):
-        if not 0 <= int(octet) <= 255:
-            raise AddressFormatError("Invalid octet value for IPv4 address")
+
+    try:
+        IPv4Address(addr)
+    except ValueError as e:
+        raise AddressFormatError(f"Invalid IPv4 address: {e}")
 
     # Verify address not in reserved/non-routable prefixes.
     if addr in pyt:
@@ -174,7 +190,10 @@ def get_as_data(addr, service="shadowserver"):
     address. In these cases, an appropriate exception is raised.
 
     """
+    # Remove leading or trailing whitespace and/or defanging of input
     addr = addr.strip()
+    addr = refang(addr)
+
     try:
         validate_ipv4(addr)
     except AddressFormatError:

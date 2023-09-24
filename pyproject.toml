@@ -4,13 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aslookup"
-version = "1.5.0"
+version = "1.5.1"
 authors = [
     { name="Darren Spruell", email="phatbuckett@gmail.com" },
 ]
 description = "IP to ASN routing data query script"
 readme = "README.md"
 dependencies = [
+    "defang",
     "dnspython",
     "pytricia",
 ]
