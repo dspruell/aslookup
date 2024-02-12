@@ -225,8 +225,12 @@ def get_as_data(addr, service="shadowserver"):
         else:
             extra_data = {}
 
-            # Team Cymru origin lookup response returns only ASN and requires
-            # second lookup to return AS name information
+            # Team Cymru origin lookup response returns only the announcing
+            # ASN (but no as-name or org identity), so requires a second lookup
+            # to return descriptive information.
+            logger.debug(
+                "raw DNS record response: %s", answers[0].to_text()
+            )
             origin_data = answers[0].to_text().strip('"')
             m1 = re.match(r"^\d+", origin_data)
             if m1 is None:
