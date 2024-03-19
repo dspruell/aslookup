@@ -14,17 +14,14 @@ from .lookup import get_as_data
 
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
-logging.basicConfig(
-    level=logging.DEBUG, format="[%(levelname)s] %(message)s"
-)
+logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def main():
     """Run main CLI."""
     description = (
-        "Client to return autonomous system information for "
-        "IPv4 addresses"
+        "Client to return autonomous system information for IPv4 addresses"
     )
     epilog = (
         "One or more IP addresses may be passed as arguments on the "
