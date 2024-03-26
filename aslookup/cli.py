@@ -14,7 +14,9 @@ from .lookup import get_as_data
 
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
-logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.DEBUG, format="[%(levelname)s] %(name): %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
