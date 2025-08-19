@@ -20,6 +20,6 @@ class NonroutableAddressError(LookupError):
 
 
 class AddressFormatError(LookupError):
-    """Supplied address is not a valid IPv4 address."""
+    """Supplied address is not a valid IP address."""
 
     pass

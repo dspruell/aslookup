@@ -12,11 +12,11 @@ utility (`as-lookup`). The lookups are currently done using DNS, which works
 well for a one-off lookups. It is not optimized for bulk lookups over the
 Whois protocol.
 
-Currently only IPv4 addresses are looked up. The client also maintains a
+Both IPv4 and IPv6 addresses are supported. The client also maintains a
 listing of IP networks which are unroutable internet addresses, typically
-special use ranges in RFCs. In this way it can both filter out addresses from
-queries which are a waste of time, as well as provide context to the user on
-the address.
+in special use RFC ranges. In this way it can both filter out addresses
+from queries which are a waste of time, as well as provide context to the
+user on the address.
 
 ## Installation
 
@@ -49,14 +49,15 @@ get_as_data(ip, service="shadowserver")
 
 ### CLI script
 
-It is possible to provide multiple IP addresses as arguments to the script, or 
-to send them as a list on standard input, in which cases the script loops over 
-them and returns output on separate lines. When providing invalid IPv4 
-addresses as arguments, the script reports the problem on standard error and 
-exits with an error. When providing input on stdin, the error is reported on 
-standard output but execution is not aborted.
+It is possible to provide multiple IP addresses as arguments to the script,
+or to send them as a list on standard input, in which cases the script
+loops over them and returns output on separate lines. When providing
+invalid IP addresses as arguments, the script reports the problem on
+standard error and exits with an error. When providing input on stdin,
+the error is reported on standard output but execution is not aborted.
 
     as-lookup 8.8.8.8 9.9.9.9
+    as-lookup 2001:4860:4860::8888 2001:4860:4860::8844
 
 or:
 

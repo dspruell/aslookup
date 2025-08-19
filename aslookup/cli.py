@@ -15,15 +15,15 @@ from .lookup import get_as_data
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
 logging.basicConfig(
-    level=logging.DEBUG, format="[%(levelname)s] %(name): %(message)s"
+    level=logging.WARNING, format="[%(levelname)s] %(name)s: %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("aslookup")
 
 
 def main():
     """Run main CLI."""
     description = (
-        "Client to return autonomous system information for IPv4 addresses"
+        "Client to return autonomous system information for IP addresses"
     )
     epilog = (
         "One or more IP addresses may be passed as arguments on the "
@@ -76,11 +76,15 @@ def main():
     parser.add_argument(
         "address",
         nargs="*",
-        help="IPv4 address(es) on which to perform AS lookup",
+        help="IP address(es) on which to perform AS lookup",
     )
     args = parser.parse_args()
 
-    logging.getLogger().setLevel(args.loglevel)
+    logger.setLevel(args.loglevel)
+    logger.debug(
+        "logging level: %s",
+        logging.getLevelName(logger.getEffectiveLevel())
+    )
 
     # Print software version
     if args.version:
