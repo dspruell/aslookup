@@ -32,8 +32,7 @@ AS_SERVICES = {
 
 # IPs with these prefixes aren't routable on Internet and need not be sent
 # to lookup service. Ref. RFC 5735 and RFC 5156.
-IP_NOLOOKUP_NETS = {
-    # IPv4 ranges
+IP_NOLOOKUP_NETS_V4 = {
     "0.0.0.0/8": "RFC 1122 IPv4 any",
     "127.0.0.0/8": "RFC 1122 loopback",
     "10.0.0.0/8": "RFC 1918 range",
@@ -50,7 +49,8 @@ IP_NOLOOKUP_NETS = {
     "224.0.0.0/4": "RFC 5771 multicast range",
     "240.0.0.0/4": "RFC 1112 IANA future use reserved range",
     "255.0.0.0/8": "RFC 1112 IPv4 limited broadcast",
-    # IPv6 ranges
+}
+IP_NOLOOKUP_NETS_V6 = {
     "::/128": "RFC 4291 IPv6 unspecified address",
     "::1/128": "RFC 4291 IPv6 loopback address",
     "::ffff:0:0/96": "RFC 4291 IPv4-mapped IPv6 addresses",
@@ -63,13 +63,14 @@ IP_NOLOOKUP_NETS = {
     "2002::/16": "RFC 3056 6to4 addressing",
 }
 
-# Build the patricia tree
-pyt = pytricia.PyTricia()
-for net, descr in IP_NOLOOKUP_NETS.items():
-    pyt[net] = descr
+# Build the patricia trees
+pyt_v4 = pytricia.PyTricia(24)
+for net, descr in IP_NOLOOKUP_NETS_V4.items():
+    pyt_v4[net] = descr
+pyt_v6 = pytricia.PyTricia(128)
+for net, descr in IP_NOLOOKUP_NETS_V6.items():
+    pyt_v6[net] = descr
 
-IPV4_FMT = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
-IPV6_FMT = re.compile(r"^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$")
 IPV4_PREFIX_FMT = re.compile(r"(?:\d{1,3}\.){3}\d{1,3}/\d{1,2}\b")
 IPV6_PREFIX_FMT = re.compile(
     r"([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}/\d{1,3}\b"
@@ -126,31 +127,42 @@ def get_ip_version(addr):
         ip_obj = ip_address(addr)
         return ip_obj.version
     except ValueError as e:
-        raise AddressFormatError(f"invalid IP address: {e}")
+        raise AddressFormatError(f"Invalid IP address: {e}")
 
 
 def validate_ip(addr):
     """
     Validate IP addresses.
 
+    - Append a default network mask for IPv6 addresses
     - Validate that input is a valid IPv4 or IPv6 address
     - Flag various reserved and non-routable addresses
 
     """
     # Raises AddressFormatError if invalid
     ip_version = get_ip_version(addr)
+    logger.debug("address %s protocol version: %d", addr, ip_version)
 
     try:
         if ip_version == 4:
             IPv4Address(addr)
-        else:
+            # Verify address not in reserved/non-routable prefixes.
+            if addr in pyt_v4:
+                raise NonroutableAddressError(pyt_v4.get(addr))
+        elif ip_version == 6:
             IPv6Address(addr)
+            if "/" not in addr:
+                addr = addr + "/128"
+            # Verify address not in reserved/non-routable prefixes.
+            if addr in pyt_v6:
+                raise NonroutableAddressError(pyt_v6.get(addr))
+        else:
+            raise AddressFormatError(
+                f"unrecognized IP address version: {ip_version}"
+            )
     except ValueError as e:
-        raise AddressFormatError(f"invalid IP address: {e}")
+        raise AddressFormatError(f"Invalid IP address: {e}")
 
-    # Verify address not in reserved/non-routable prefixes.
-    if addr in pyt:
-        raise NonroutableAddressError(pyt.get(addr))
     return
 
 
@@ -165,7 +177,8 @@ def format_ipv6_for_dns(addr):
     Format IPv6 address for reverse DNS lookup.
 
     Convert IPv6 address to nibble format for DNS queries.
-    Example: 2001:db8::1 -> 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2
+    Example: 2001:db8::1
+             -> 1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2
     """
     ipv6_obj = IPv6Address(addr)
     # Get the full expanded form (no :: compression)

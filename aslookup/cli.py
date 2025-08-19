@@ -82,8 +82,7 @@ def main():
 
     logger.setLevel(args.loglevel)
     logger.debug(
-        "logging level: %s",
-        logging.getLevelName(logger.getEffectiveLevel())
+        "logging level: %s", logging.getLevelName(logger.getEffectiveLevel())
     )
 
     # Print software version
