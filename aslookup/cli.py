@@ -1,6 +1,7 @@
 """aslookup CLI module."""
 
 import argparse
+import asyncio
 import logging
 import sys
 from os import linesep
@@ -10,7 +11,7 @@ from defang import refang
 
 from . import __full_version__
 from .exceptions import AddressFormatError, LookupError
-from .lookup import get_as_data
+from .lookup import get_as_data, get_as_data_async
 
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
@@ -103,30 +104,82 @@ def main():
     #   proceeding without exiting, in order to make it so that address lists
     #   process without interruption. All issues are output on stderr.
     in_src = args.address if args.address else sys.stdin
+    
+    # Collect all addresses first
+    addresses = []
     for addr in in_src:
         addr = addr.strip()
         addr = refang(addr)
-        try:
-            data = get_as_data(addr, service=args.service)
-        except AddressFormatError as e:
-            if args.address:
-                parser.error("[{}] {}".format(addr, e))
-            else:
-                stream = sys.stderr
-                out_str = e
-        except LookupError as e:
-            stream = sys.stderr
-            out_str = e
-        else:
-            stream = sys.stdout
-            if not args.raw:
-                out_str = "{0} | {1} | {2}".format(
-                    data.handle, data.cc, data.as_name
-                )
-            else:
-                print(data)
-                continue
+        if addr:  # Skip empty lines
+            addresses.append(addr)
 
-        print("%-15s  %s" % (addr, out_str), file=stream)
-        if args.pause:
-            sleep(1)
+    # Run async processing
+    asyncio.run(process_addresses_async(addresses, args, parser))
+
+
+async def process_single_address(addr, service, raw_output):
+    """Process a single address asynchronously."""
+    try:
+        data = await get_as_data_async(addr, service=service)
+        stream = sys.stdout
+        if not raw_output:
+            out_str = "{0} | {1} | {2}".format(
+                data.handle, data.cc, data.as_name
+            )
+        else:
+            # For raw output, we need to return the data object
+            return addr, data, None, sys.stdout
+        return addr, out_str, None, stream
+    except AddressFormatError as e:
+        return addr, str(e), e, sys.stderr
+    except LookupError as e:
+        return addr, str(e), e, sys.stderr
+
+
+async def process_addresses_async(addresses, args, parser):
+    """Process multiple addresses concurrently."""
+    if not addresses:
+        return
+    
+    # Limit concurrent requests to avoid overwhelming DNS servers
+    semaphore = asyncio.Semaphore(15)
+    
+    async def process_with_semaphore(addr):
+        async with semaphore:
+            return await process_single_address(addr, args.service, args.raw)
+    
+    # For single address or when using command line args, handle errors differently
+    if len(addresses) == 1 and args.address:
+        # Single address from command line - exit on error
+        addr = addresses[0]
+        try:
+            result = await process_single_address(addr, args.service, args.raw)
+            addr, out_str, error, stream = result
+            if error and isinstance(error, AddressFormatError):
+                parser.error("[{}] {}".format(addr, error))
+            if args.raw and stream == sys.stdout:
+                print(out_str)  # out_str is actually the data object
+            else:
+                print("%-15s  %s" % (addr, out_str), file=stream)
+        except Exception as e:
+            parser.error("[{}] {}".format(addr, e))
+    else:
+        # Multiple addresses or stdin input - process concurrently
+        tasks = [process_with_semaphore(addr) for addr in addresses]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                # Handle unexpected exceptions
+                addr = addresses[i]
+                print("%-15s  %s" % (addr, str(result)), file=sys.stderr)
+            else:
+                addr, out_str, error, stream = result
+                if args.raw and stream == sys.stdout:
+                    print(out_str)  # out_str is actually the data object
+                else:
+                    print("%-15s  %s" % (addr, out_str), file=stream)
+            
+            # Handle pause between requests
+            if args.pause and i < len(results) - 1:
+                await asyncio.sleep(1)

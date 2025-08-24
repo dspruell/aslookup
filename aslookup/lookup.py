@@ -1,10 +1,12 @@
 """Lookup routines."""
 
+import asyncio
 import logging
 import re
 from collections import namedtuple
 from ipaddress import IPv4Address, IPv6Address, ip_address
 
+import aiodns
 import dns.resolver
 import dns.reversename
 import pytricia
@@ -362,5 +364,104 @@ def get_as_data(addr, service="shadowserver"):
                 for a in answers:
                     logger.debug("raw DNS record response: %s", a)
                 asdata_text = answers[0].to_text()
+                asdata = get_cymru_data(asdata_text, extra=extra_data)
+        return asdata
+
+
+async def get_as_data_async(addr, service="shadowserver"):
+    """
+    Async version of get_as_data().
+    
+    Query and return AS information for supplied IP address using async DNS.
+    """
+    # Remove leading or trailing whitespace and/or defanging of input
+    addr = addr.strip()
+    addr = refang(addr)
+
+    try:
+        validate_ip(addr)
+    except AddressFormatError:
+        raise
+    except LookupError as e:
+        raise LookupError("Ignoring: %s" % e)
+
+    # Determine IP version and format accordingly
+    ip_version = get_ip_version(addr)
+
+    if ip_version == 4:
+        # IPv4: Format IP to reversed-octet structure
+        rev_addr = ".".join(reversed(addr.split(".")))
+        origin_addr = ".".join(
+            [rev_addr, AS_SERVICES[service]["origin_v4_suffix"]]
+        )
+    else:
+        # IPv6: Format IP to reversed nibble structure
+        rev_addr = format_ipv6_for_dns(addr)
+        origin_addr = ".".join(
+            [rev_addr, AS_SERVICES[service]["origin_v6_suffix"]]
+        )
+
+    # Create async DNS resolver
+    resolver = aiodns.DNSResolver()
+    
+    try:
+        # Perform async DNS query
+        answers = await resolver.query(origin_addr, "TXT")
+    except aiodns.error.DNSError:
+        raise NoASDataError("No routing origin data for address")
+
+    # Pass the query address in to either service handler
+    extra_data = {"address": addr}
+
+    if answers:
+        for a in answers:
+            logger.debug("raw DNS record response: %s", a)
+        if service == "shadowserver":
+            # Shadowserver origin lookup response includes AS name information
+            asdata_text = answers[0].text
+            asdata = get_shadowserver_data(asdata_text, extra=extra_data)
+            # Shadowserver will still output information in cases that no ASN
+            # is identified, so raise exception when this occurs
+            if not asdata.asn:
+                raise NoASDataError("No routing origin data for address")
+        else:
+            # Team Cymru origin lookup response returns only the originating
+            # ASN (but no as-name or org identity), so requires a second lookup
+            # to return descriptive information.
+            logger.debug("raw DNS record response: %s", answers[0].text)
+            origin_data = answers[0].text.strip('"')
+            m1 = re.match(r"^\d+", origin_data)
+            if m1 is None:
+                msg = (
+                    f"Error in lookup from service {service} for IP {addr} "
+                    f"(origin_data response: {origin_data})"
+                )
+                raise NoASDataError(msg)
+
+            # Capture prefix from the origin data response
+            m2 = (
+                IPV4_PREFIX_FMT.search(origin_data)
+                if ip_version == 4
+                else None
+            )
+            m2 = (
+                IPV6_PREFIX_FMT.search(origin_data)
+                if ip_version == 6
+                else None
+            )
+            if m2 is not None:
+                extra_data.update(ip_prefix=m2.group(0))
+
+            # Run second query for AS name/description info
+            _sfx = AS_SERVICES[service]["as_description_suffix"]
+            as_data_addr = f"AS{m1.group(0)}.{_sfx}"
+            try:
+                answers = await resolver.query(as_data_addr, "TXT")
+            except aiodns.error.DNSError:
+                raise NoASDataError("No routing origin data for address")
+            if answers:
+                for a in answers:
+                    logger.debug("raw DNS record response: %s", a)
+                asdata_text = answers[0].text
                 asdata = get_cymru_data(asdata_text, extra=extra_data)
         return asdata

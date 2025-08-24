@@ -8,15 +8,23 @@ operated by the following organizations:
 * Team Cymru -- http://www.team-cymru.org/IP-ASN-mapping.html
 
 The client implements both a simple Python module (aslookup) as well as a CLI
-utility (`as-lookup`). The lookups are currently done using DNS, which works
-well for a one-off lookups. It is not optimized for bulk lookups over the
-Whois protocol.
+utility (`as-lookup`). The lookups are done using DNS with asynchronous 
+processing for improved performance when handling multiple IP addresses.
 
 Both IPv4 and IPv6 addresses are supported. The client also maintains a
 listing of IP networks which are unroutable internet addresses, typically
 in special use RFC ranges. In this way it can both filter out addresses
 from queries which are a waste of time, as well as provide context to the
 user on the address.
+
+## Performance
+
+Starting with version 2.0.0, aslookup uses asynchronous DNS lookups to 
+significantly improve performance when processing multiple IP addresses. 
+The tool automatically processes multiple addresses concurrently (up to 15 
+simultaneous requests by default) while maintaining the same CLI interface 
+and output format. This provides substantial speed improvements for bulk 
+lookups without requiring any changes to existing usage patterns.
 
 ## Installation
 
@@ -70,4 +78,3 @@ This can be useful to validate included IP prefix classifications and see the
 output format.
 
     as-lookup < tests/test_input.txt
-
