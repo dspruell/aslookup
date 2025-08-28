@@ -1,6 +1,5 @@
 """Lookup routines."""
 
-import asyncio
 import logging
 import re
 from collections import namedtuple
@@ -371,7 +370,7 @@ def get_as_data(addr, service="shadowserver"):
 async def get_as_data_async(addr, service="shadowserver"):
     """
     Async version of get_as_data().
-    
+
     Query and return AS information for supplied IP address using async DNS.
     """
     # Remove leading or trailing whitespace and/or defanging of input
@@ -403,7 +402,7 @@ async def get_as_data_async(addr, service="shadowserver"):
 
     # Create async DNS resolver
     resolver = aiodns.DNSResolver()
-    
+
     try:
         # Perform async DNS query
         answers = await resolver.query(origin_addr, "TXT")

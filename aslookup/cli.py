@@ -5,13 +5,12 @@ import asyncio
 import logging
 import sys
 from os import linesep
-from time import sleep
 
 from defang import refang
 
 from . import __full_version__
 from .exceptions import AddressFormatError, LookupError
-from .lookup import get_as_data, get_as_data_async
+from .lookup import get_as_data_async
 
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
@@ -104,7 +103,7 @@ def main():
     #   proceeding without exiting, in order to make it so that address lists
     #   process without interruption. All issues are output on stderr.
     in_src = args.address if args.address else sys.stdin
-    
+
     # Collect all addresses first
     addresses = []
     for addr in in_src:
@@ -140,15 +139,16 @@ async def process_addresses_async(addresses, args, parser):
     """Process multiple addresses concurrently."""
     if not addresses:
         return
-    
+
     # Limit concurrent requests to avoid overwhelming DNS servers
     semaphore = asyncio.Semaphore(15)
-    
+
     async def process_with_semaphore(addr):
         async with semaphore:
             return await process_single_address(addr, args.service, args.raw)
-    
-    # For single address or when using command line args, handle errors differently
+
+    # For single address or when using command line args, handle errors
+    # differently
     if len(addresses) == 1 and args.address:
         # Single address from command line - exit on error
         addr = addresses[0]
@@ -167,7 +167,7 @@ async def process_addresses_async(addresses, args, parser):
         # Multiple addresses or stdin input - process concurrently
         tasks = [process_with_semaphore(addr) for addr in addresses]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 # Handle unexpected exceptions
@@ -179,7 +179,7 @@ async def process_addresses_async(addresses, args, parser):
                     print(out_str)  # out_str is actually the data object
                 else:
                     print("%-15s  %s" % (addr, out_str), file=stream)
-            
+
             # Handle pause between requests
             if args.pause and i < len(results) - 1:
                 await asyncio.sleep(1)

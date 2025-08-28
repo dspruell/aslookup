@@ -8,7 +8,7 @@ operated by the following organizations:
 * Team Cymru -- http://www.team-cymru.org/IP-ASN-mapping.html
 
 The client implements both a simple Python module (aslookup) as well as a CLI
-utility (`as-lookup`). The lookups are done using DNS with asynchronous 
+utility (`as-lookup`). The lookups are done using DNS with asynchronous
 processing for improved performance when handling multiple IP addresses.
 
 Both IPv4 and IPv6 addresses are supported. The client also maintains a
@@ -19,12 +19,11 @@ user on the address.
 
 ## Performance
 
-Starting with version 2.0.0, aslookup uses asynchronous DNS lookups to 
-significantly improve performance when processing multiple IP addresses. 
-The tool automatically processes multiple addresses concurrently (up to 15 
-simultaneous requests by default) while maintaining the same CLI interface 
-and output format. This provides substantial speed improvements for bulk 
-lookups without requiring any changes to existing usage patterns.
+Starting with version 2.0.0, aslookup uses asynchronous DNS lookups to
+improve performance when processing multiple IP addresses.  The tool
+automatically processes multiple addresses concurrently (up to 15
+simultaneous requests by default) while maintaining the same CLI interface
+and output format.
 
 ## Installation
 
