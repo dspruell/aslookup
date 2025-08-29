@@ -28,6 +28,14 @@ classifiers = [
 [project.scripts]
 as-lookup = "aslookup.cli:main"
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "pytest-cov",
+]
+
 [project.urls]
 "Bug Tracker" = "https://github.com/dspruell/aslookup/issues"
 "Homepage" = "https://github.com/dspruell/aslookup"
