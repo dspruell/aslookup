@@ -306,6 +306,7 @@ def get_as_data(addr, service="shadowserver"):
         )
 
     try:
+        logger.debug("issuing DNS query for %s", origin_addr)
         answers = dns.resolver.query(origin_addr, "TXT")
     except dns.resolver.NXDOMAIN:
         raise NoASDataError("No routing origin data for address")
@@ -356,6 +357,7 @@ def get_as_data(addr, service="shadowserver"):
             _sfx = AS_SERVICES[service]["as_description_suffix"]
             as_data_addr = f"AS{m1.group(0)}.{_sfx}"
             try:
+                logger.debug("issuing DNS query for %s", origin_addr)
                 answers = dns.resolver.query(as_data_addr, "TXT")
             except dns.resolver.NXDOMAIN:
                 raise NoASDataError("No routing origin data for address")
@@ -405,6 +407,7 @@ async def get_as_data_async(addr, service="shadowserver"):
 
     try:
         # Perform async DNS query
+        logger.debug("issuing DNS query for %s", origin_addr)
         answers = await resolver.query(origin_addr, "TXT")
     except aiodns.error.DNSError:
         raise NoASDataError("No routing origin data for address")
@@ -455,6 +458,7 @@ async def get_as_data_async(addr, service="shadowserver"):
             _sfx = AS_SERVICES[service]["as_description_suffix"]
             as_data_addr = f"AS{m1.group(0)}.{_sfx}"
             try:
+                logger.debug("issuing DNS query for %s", origin_addr)
                 answers = await resolver.query(as_data_addr, "TXT")
             except aiodns.error.DNSError:
                 raise NoASDataError("No routing origin data for address")

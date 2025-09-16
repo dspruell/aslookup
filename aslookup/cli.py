@@ -15,7 +15,8 @@ from .lookup import get_as_data_async
 DEFAULT_LOOKUP_SOURCE = "cymru"
 
 logging.basicConfig(
-    level=logging.WARNING, format="[%(levelname)s] %(name)s: %(message)s"
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("aslookup")
 
