@@ -105,3 +105,7 @@ venv.bak/
 
 # editor
 *.sw[a-z]
+
+# Agents
+AGENTS.md
+CLAUDE.md
